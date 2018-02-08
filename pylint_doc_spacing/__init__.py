@@ -1,20 +1,18 @@
 """PyLint Doc Spacing extension."""
 
 import linecache
+import pdb
 
 from pylint import checkers
 from pylint import interfaces
 
-__version__ = '0.0.1'
+__version__ = '0.0.3'
 
 
 def register(linter):
     """Register this plugin."""
 
     linter.register_checker(DocSpacingChecker(linter))
-
-
-# TODO(pascal): Add tests.
 
 
 class DocSpacingChecker(checkers.BaseChecker):
@@ -55,12 +53,32 @@ class DocSpacingChecker(checkers.BaseChecker):
     def _check_doc_spacing(self, node, args):
         if node.doc is None or not node.body:
             return
-        first_body_lineno = node.body[0].fromlineno
-        line_before_body = linecache.getline(node.root().file, first_body_lineno-1)
-        if line_before_body.strip():
-            self.add_message('doc-spacing-missing', line=first_body_lineno-1, node=node, args=args)
-            return
 
-        line_above = linecache.getline(node.root().file, first_body_lineno-2)
-        if not line_above.strip():
-            self.add_message('doc-spacing-extra', node=node, line=first_body_lineno-1, args=args)
+        # Collect blank lines and comments above the first child node.
+        lines_before_body = []
+        for lineno in range(node.body[0].lineno - 1, node.lineno, -1):
+            line = linecache.getline(node.root().file, lineno)
+
+            if line.strip() and not line.lstrip().startswith('#'):
+                break
+
+            lines_before_body.append((lineno, line))
+        lines_before_body = list(reversed(lines_before_body))
+
+        try:
+            lineno, first_empty_line = lines_before_body.pop(0)
+        except IndexError:
+            first_empty_line = 'Non empty'
+            lineno = node.body[0].lineno
+
+        if first_empty_line.strip():
+            self.add_message(
+                'doc-spacing-missing', line=lineno, node=node, args=args,
+                confidence=interfaces.HIGH)
+
+        for lineno, line in lines_before_body:
+            if line.strip():
+                break
+            self.add_message(
+                'doc-spacing-extra', node=node, line=lineno, args=args,
+                confidence=interfaces.HIGH)
