@@ -1,8 +1,8 @@
-"""PyLint plugin to check the presence of a blank line after any documentation."""
+"""PyLint plugin to check the presence or not of a blank line after any documentation."""
 
 import setuptools
 
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 
 setuptools.setup(
     name='pylint-doc-spacing',

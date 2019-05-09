@@ -141,6 +141,47 @@ import unittest
         ):
             self.walk(module_node)
 
+    @testutils.set_config(
+        function_doc_spacing='none',
+        module_doc_spacing='any',
+    )
+    def test_correct_spacing_with_different_config(self):
+        """Test module with perfect documentation on a different config."""
+
+        module_node = self._parse_module('''"""Module documentation."""
+
+
+import unittest
+
+class A(object):
+    """Documentation of A."""
+
+    def b():
+        """Documentation of b."""
+        pass
+''', path='/unittest/perfect_spacing.py')
+        with self.assertNoMessages():
+            self.walk(module_node)
+
+    @testutils.set_config(module_doc_spacing='none')
+    def test_extra_blank_line_for_none_config(self):
+        """Test an extra blank line when config is set to none."""
+
+        module_node = self._parse_module('''"""Module documentation."""
+
+import unittest
+''', path='/unittest/perfect_spacing.py')
+        with self.assertAddsMessages(
+            testutils.Message(
+                msg_id='doc-spacing-extra',
+                node=module_node,
+                line=2,
+                args='module',
+                confidence=interfaces.HIGH,
+            ),
+        ):
+            self.walk(module_node)
+
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
